@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<title>Face Analyzer</title>
+		<!-- add a reference to the external stylesheet -->
+		<link rel="stylesheet" href="https://bootswatch.com/5/superhero/bootstrap.min.css">
+		<style>			
+			video {
+				border: solid tomato;
+			}
+
+			#snap {
+				position: relative;
+				display: block;
+				left: 550px;
+			}
+			
+		</style>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+	</head>
+	
+	<body>
+		<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+		  <div class="container-fluid">
+			<a class="navbar-brand" href="#">FaceMood</a>
+			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarColor01" aria-controls="navbarColor01" aria-expanded="false" aria-label="Toggle navigation">
+			  <span class="navbar-toggler-icon"></span>
+			</button>
+
+			<div class="collapse navbar-collapse" id="navbarColor01">
+			  <ul class="navbar-nav me-auto">
+				<li class="nav-item">
+				  <a class="nav-link active" href="#">Home
+					<span class="visually-hidden">(current)</span>
+				  </a>
+				</li>
+			  </ul>
+			  <form class="d-flex">
+				<input class="form-control me-sm-2" type="text" placeholder="Search">
+				<button class="btn btn-secondary my-2 my-sm-0" type="submit">Search</button>
+			  </form>
+			</div>
+		  </div>
+		</nav>
+	
+		<!-- Style for cointainer -->
+        <div class="jumbotron">
+            <h1 class="display-3">Welcome to FaceMood</h1>
+            <p class="lead">Simply click on <b>Snap and Analyze</b> below, this app will capture your face and analyze it.</p>
+            <hr class="my-4">
+            <p>Powered by <b>Deep Face</b>. Please check out this amazing open source project <a href="https://github.com/serengil/deepface">here</a>.</p>
+            <p class="lead">
+                <a class="btn btn-primary btn-lg" href="#" role="button">Thank you for visiting!</a>
+            </p>
+        </div>
+        <!-- END -- Style for cointainer -->
+	
+		<!--
+			Ideally these elements aren't created until it's confirmed that the 
+			client supports video/camera, but for the sake of illustrating the 
+			elements involved, they are created with markup (not JavaScript)
+		-->
+		<video id="video" width="640" height="480" style="margin:10px" autoplay></video>
+		<div style="float:right">
+			<canvas id="canvas" style="position:relative;clear:both"></canvas>
+			<h5 id="wait" style="position:absolute;bottom:13px;display:none">Please Wait...</h5>
+		</div>
+		<button id="snap" class="btn btn-success">Snap and Analyze</button>
+				
+		<script>
+			// Grab elements, create settings, etc.
+			var video = document.getElementById('video');
+
+			var snapButton = document.getElementById('snap');
+			snapButton.addEventListener('click', snap);
+
+			// Get access to the camera!
+			if(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+				// Not adding `{ audio: true }` since we only want video now
+				navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
+					//video.src = window.URL.createObjectURL(stream);
+					video.srcObject = stream;
+					video.play();
+				});
+			}
+			function snap() {	
+				var canvas = document.getElementById('canvas');
+				var video = document.getElementById('video');
+				var context = canvas.getContext('2d');
+				var wait = document.getElementById('wait');
+				
+				canvas.width = video.videoWidth;
+				canvas.height = video.videoHeight;
+				
+				context.drawImage(video, 0, 0, video.videoWidth/2, video.videoHeight/2);
+				wait.style.display = "block";
+				
+				canvas.toBlob(function(blob) {
+				  // blob ready, download it
+				  let link = document.createElement('a');
+				  url = URL.createObjectURL(blob);
+
+				  // delete the internal blob reference, to let the browser clear memory from it
+				  URL.revokeObjectURL(url);
+				  
+				  url = url.replace('blob:' + window.location.href, '');
+				  let data = new FormData();
+				  data.append('image', blob, url);
+				  
+				  
+				  
+				  // Send image to server
+				  $.ajax({  
+					type: 'POST',  
+					url: '/get_analysis',  
+					data: data,  
+					contentType: false,
+					processData: false,  
+					success: function (out) {  
+						alert(out);  
+						wait.style.display = "none";
+					}, 
+					error: function () {
+						alert('Error while uploading image..');
+						wait.style.display = "none";
+					}
+					});
+					
+				   	
+				  
+				}, 'image/png');
+			}
+		</script>
+	</body>
+</html>
+		
